@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Medical History</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .table-responsive {
+      margin-top: 20px;
+    }
+    .search-box {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="text-center text-primary mb-4">Patient Medical History</h1>
+    <div class="search-box d-flex">
+      <input
+        id="patientNameInput"
+        type="text"
+        class="form-control me-2"
+        placeholder="Enter Patient Name"
+      />
+      <button class="btn btn-primary" onclick="fetchPatientHistory()">Submit</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>Patient ID</th>
+            <th>Name</th>
+            <th>NPI</th>
+            <th>Provider</th>
+            <th>Doctor</th>
+            <th>Date of Visit</th>
+            <th>Discharge Date</th>
+            <th>Disease</th>
+            <th>Payer</th>
+            <th>Path Lab Reports</th>
+            <th>Medicines</th>
+            <th>Severity</th>
+          </tr>
+        </thead>
+        <tbody id="patientHistoryTable">
+          <tr>
+            <td colspan="12" class="text-center">No data available</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    async function fetchPatientHistory() {
+      const patientName = document.getElementById("patientNameInput").value.trim();
+      const tableBody = document.getElementById("patientHistoryTable");
+
+      if (!patientName) {
+        tableBody.innerHTML = `<tr><td colspan="12" class="text-center">No data available</td></tr>`;
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:3000/patient-history?name=${encodeURIComponent(patientName)}`);
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          const rows = result.data
+            .map((visit) => {
+              const formatDate = (dateString) => {
+                if (!dateString) return ""; 
+                return new Date(dateString).toISOString().split("T")[0];
+              };
+
+              return `
+              <tr>
+                <td>${visit.patient_id}</td>
+                <td>${visit.first_name}</td>
+                <td>${visit.unique_provider_id}</td>
+                <td>${visit.provider_name}</td>
+                <td>${visit.doctor_name}</td>
+                <td>${formatDate(visit.date_of_visit)}</td>
+                <td>${formatDate(visit.discharge_date)}</td>
+                <td>${visit.disease}</td>
+                <td>${visit.payer}</td>
+                <td>${visit.path_lab_reports}</td>
+                <td>${visit.medicines_advised}</td>
+                <td>${visit.severity}</td>
+              </tr>
+            `;
+            })
+            .join("");
+          tableBody.innerHTML = rows;
+        } else {
+          tableBody.innerHTML = `<tr><td colspan="12" class="text-center">${result.message}</td></tr>`;
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        tableBody.innerHTML = `<tr><td colspan="12" class="text-center">Error fetching data</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>
